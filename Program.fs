@@ -17,20 +17,20 @@ type Position =
         EnterDate: DateTime
         EnterPrice: Decimal
     }
-
+    
 let ProcessData (historicalData: List<HistoricalValue>) = 
-    let rec processDataIntern (historicalData: List<HistoricalValue>) (allTimeHigh: decimal) (allTimeHighPositions: seq<Position>) (notAllTimeHighPositions: seq<Position>) =
-        let currentData = Seq.head historicalData
-        let newAllTimePosition = {Position.EnterDate = currentData.Date; 
-                                      Position.EnterPrice = currentData.Close}
-        
+    let rec processDataIntern (historicalData: List<HistoricalValue>) (allTimeHigh: decimal) (allTimeHighPositions: List<Position>) (notAllTimeHighPositions: List<Position>) =
         match historicalData with
-            |  [ ] ->  2
+            |  [ ] ->  allTimeHighPositions, notAllTimeHighPositions
             |  head::tail -> 
+                    let currentData = Seq.head historicalData
+                    let newPosition = {Position.EnterDate = currentData.Date; 
+                                      Position.EnterPrice = currentData.Close}
+
                     if currentData.Close > allTimeHigh then
-                        processDataIntern (List.tail historicalData) currentData.Close allTimeHighPositions notAllTimeHighPositions
+                        processDataIntern (List.tail historicalData) currentData.Close (allTimeHighPositions @ [newPosition]) notAllTimeHighPositions
                     else 
-                        processDataIntern (List.tail historicalData) currentData.Close allTimeHighPositions notAllTimeHighPositions
+                        processDataIntern (List.tail historicalData) allTimeHigh allTimeHighPositions (notAllTimeHighPositions @ [newPosition])
         
     processDataIntern historicalData 0M [] []
 
@@ -44,9 +44,13 @@ let LoadHistoricalData (path: string)=
     lines 
         |> Seq.skip 1
         |> Seq.map(processLine)
+        |> Seq.toList
 
 [<EntryPoint>]
 let main argv =
-    printfn "%A" (LoadHistoricalData "^DJI.csv")
-    printfn "Hello World from F#!"
+    let historicalData = LoadHistoricalData "^DJI.csv"
+    let vv = ProcessData historicalData
+    let allTimeHighPositions, notAllTimeHighPositions = vv;
+    printfn "number of positions started at all time high: %i" (allTimeHighPositions |> List.length)
+    printfn "number of positions started not at all time high: %i" (notAllTimeHighPositions |> List.length)
     0 // return an integer exit code
