@@ -14,25 +14,46 @@ type HistoricalValue =
 
 type Position =
     {
-        EnterDate: DateTime
-        EnterPrice: Decimal
+        Date: DateTime
+        Price: Decimal
     }
-    
+  
+type TransactionResult = 
+    {
+        EnterPosition: Position
+        ExitPosition: Position
+    }
+
 let ProcessData (historicalData: List<HistoricalValue>) = 
-    let rec processDataIntern (historicalData: List<HistoricalValue>) (allTimeHigh: decimal) (allTimeHighPositions: List<Position>) (notAllTimeHighPositions: List<Position>) =
+    let rec processDataIntern (historicalData: List<HistoricalValue>) (allTimeHigh: decimal) (allTimeHighPositions: List<Position>) (notAllTimeHighPositions: List<Position>) (allTimeResults: List<TransactionResult>) (notAllTimeResults: List<TransactionResult>) =
         match historicalData with
-            |  [ ] ->  allTimeHighPositions, notAllTimeHighPositions
+            |  [ ] ->  allTimeResults, notAllTimeResults
             |  head::tail -> 
                     let currentData = Seq.head historicalData
-                    let newPosition = {Position.EnterDate = currentData.Date; 
-                                      Position.EnterPrice = currentData.Close}
-
+                    let newPosition = {Position.Date = currentData.Date; 
+                                      Position.Price = currentData.Close}
                     if currentData.Close > allTimeHigh then
-                        processDataIntern (List.tail historicalData) currentData.Close (allTimeHighPositions @ [newPosition]) notAllTimeHighPositions
+                        let processFunction = processDataIntern (List.tail historicalData) currentData.Close (allTimeHighPositions @ [newPosition]) notAllTimeHighPositions
+                        match allTimeHighPositions with
+                            | [] -> processFunction allTimeResults notAllTimeResults
+                            | head::tail ->  
+                                match head with 
+                                    | n when currentData.Date >= head.Date.AddYears(+5) ->
+                                             let result = {TransactionResult.EnterPosition = head; TransactionResult.ExitPosition = newPosition}
+                                             processFunction (allTimeResults @ [result]) notAllTimeResults
+                                    | _ -> processFunction allTimeResults notAllTimeResults
                     else 
-                        processDataIntern (List.tail historicalData) allTimeHigh allTimeHighPositions (notAllTimeHighPositions @ [newPosition])
+                        let processFunction = processDataIntern (List.tail historicalData) allTimeHigh allTimeHighPositions (notAllTimeHighPositions @ [newPosition])
+                        match notAllTimeHighPositions with
+                            | [] -> processFunction allTimeResults notAllTimeResults
+                            | head::tail ->  
+                                match head with 
+                                    | n when currentData.Date >= head.Date.AddYears(+5) ->
+                                             let result = {TransactionResult.EnterPosition = head; TransactionResult.ExitPosition = newPosition}
+                                             processFunction allTimeResults (notAllTimeResults @ [result])
+                                    | _ -> processFunction allTimeResults notAllTimeResults                        
         
-    processDataIntern historicalData 0M [] []
+    processDataIntern historicalData 0M [] [] [] []
 
 let processLine (line: string) =
     let values = line.Split [|','|]
@@ -51,6 +72,7 @@ let main argv =
     let historicalData = LoadHistoricalData "^DJI.csv"
     let vv = ProcessData historicalData
     let allTimeHighPositions, notAllTimeHighPositions = vv;
-    printfn "number of positions started at all time high: %i" (allTimeHighPositions |> List.length)
-    printfn "number of positions started not at all time high: %i" (notAllTimeHighPositions |> List.length)
+    printfn "number of finished transactions that were started at all time high: %i" (allTimeHighPositions |> List.length)
+    printfn "number of finished transactions that were startet at not at all time high: %i" (notAllTimeHighPositions |> List.length)
+
     0 // return an integer exit code
