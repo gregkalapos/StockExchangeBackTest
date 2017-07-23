@@ -132,7 +132,10 @@ let createChart (allTimeHighTransactions: list<TransactionResult>) (notAllTimeHi
                                         c.Values <- data
                                                     |> List.map(fun resultItem -> 
                                                             Tuple.Create(resultItem.EnterPosition.Price, (transformTypeToColor resultItem.Type)))
-                                                    |> List.toSeq                
+                                                    |> List.toSeq
+                                        c.Gains <- data
+                                                    |> List.map(calculateGain)
+                                                    |> List.toSeq
                                         c.RenderChart();                   
                         )    
     let img = SkiaSharp.SKImage.Create(n);
@@ -165,4 +168,5 @@ let rec processDataForFiles (fileNames: list<string>) =
 [<EntryPoint>]
 let main argv =
     processDataForFiles ["^DJI.csv"; "^GSPC.csv"; "^GDAXI.csv"]
+    //processDataForFile "^DJI.csv"
     0
