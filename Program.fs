@@ -1,5 +1,6 @@
 ﻿// Learn more about F# at http://fsharp.org
 open System
+open SkiaChart;
 
 //Buy at alltime high and hold it for 5 years
 //Buy at not all time high and hold it for 5 years
@@ -109,19 +110,51 @@ let printDataInHistoricOrder (allTimeHighResults: list<TransactionResult>) (notA
     |> List.sortBy(fun f -> f.EnterPosition.Date)
     |> List.iter(printTransactionResult)
 
+let transformTypeToColor enterPositionType =
+    match enterPositionType with
+     | AllTimeHigh -> SkiaChart.PointColor.Green
+     | NotAllTimeHigh -> SkiaChart.PointColor.Red
+
+let createChart (allTimeHighTransactions: list<TransactionResult>) (notAllTimeHighTransactions: list<TransactionResult>) fileName =
+    let width = 1200;
+    let height = 900;
+    let n = SkiaSharp.SKImageInfo(width, height);
+    using(SkiaSharp.SKSurface.Create(n))  
+                        (fun surface ->                                        
+                                        let c = SkiaChart.SkiaChart(surface, width, height)               
+                                        let data =  (allTimeHighTransactions @ notAllTimeHighTransactions) 
+                                                    |> List.sortBy(fun f -> f.EnterPosition.Date)
+
+                                        c.Dates <- data 
+                                                    |> List.map(fun resultItem -> resultItem.EnterPosition.Date) 
+                                                    |> List.toSeq
+
+                                        c.Values <- data
+                                                    |> List.map(fun resultItem -> 
+                                                            Tuple.Create(resultItem.EnterPosition.Price, (transformTypeToColor resultItem.Type)))
+                                                    |> List.toSeq                
+                                        c.RenderChart();                   
+                        )    
+    let img = SkiaSharp.SKImage.Create(n);
+    use output = System.IO.File.OpenWrite(fileName + ".jpeg")
+    img.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100).SaveTo(output);
+    ()
+
 let processDataForFile (fileName: string) = 
     let historicalData = LoadHistoricalData fileName
     printfn "processing %s" fileName 
     printfn "Historical Data Size: %i" (historicalData |> List.length)
     let processedData = ProcessData historicalData
     let allTimeHighTransactions, notAllTimeHighTransactions = processedData;
-    
+    createChart allTimeHighTransactions notAllTimeHighTransactions fileName
+
     //printDataInHistoricOrder allTimeHighTransactions notAllTimeHighTransactions
     printfn "number of finished transactions that were started at all time high: %i" (allTimeHighTransactions |> List.length)
     printfn "number of finished transactions that were startet at not at all time high: %i" (notAllTimeHighTransactions |> List.length)
     printfn "AllTimehigh avgGain: %M" (allTimeHighTransactions |> (List.map calculateGain) |> List.average)
     printfn "NOT AllTimehigh avgGain: %M" (notAllTimeHighTransactions |> (List.map calculateGain) |> List.average)
     printfn " "
+    //SkiaChart.SkiaChart cc = new SkiaChart.SkiaChart();
 
 let rec processDataForFiles (fileNames: list<string>) = 
     match fileNames with 
