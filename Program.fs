@@ -2,7 +2,7 @@
 open System
 open SkiaChart;
 
-//Buy at alltime high and hold it for 5 years
+//Buy at all-time high and hold it for 5 years
 //Buy at not all time high and hold it for 5 years
 //Calculate and avg gain in both sets 
 
@@ -38,8 +38,8 @@ let printTransactionResult (result: TransactionResult) =
     printfn "Gain: %M" (calculateGain result)
     printfn " "
 
-//helper function that decides if the current value counts as alltime high 
-//we interpret everything as alltime high which is either all time high OR 
+//helper function that decides if the current value counts as all-time high 
+//we interpret everything as alltime high which is either all-time high OR 
 //is within 3 trading days and 99% of the last all time high
 let smoothAllTimeHighs (currentValue: decimal) (lastAllTimeHighValue: decimal) (tradingDaysSinceLastAllTimeHigh: int) (highestChangeFromAllTimeHigh: decimal) =
     let retVal = (currentValue >= lastAllTimeHighValue ||
@@ -145,19 +145,19 @@ let createChart (allTimeHighTransactions: list<TransactionResult>) (notAllTimeHi
 
 let processDataForFile (fileName: string) = 
     let historicalData = LoadHistoricalData fileName
-    printfn "processing %s" fileName 
+    printfn "Processing %s" fileName 
     printfn "Historical Data Size: %i" (historicalData |> List.length)
+    printfn "Date Range: %s - %s" (((historicalData |> List.head).Date).ToShortDateString()) (((historicalData |> List.rev |> List.head).Date).ToShortDateString())
     let processedData = ProcessData historicalData
     let allTimeHighTransactions, notAllTimeHighTransactions = processedData;
     createChart allTimeHighTransactions notAllTimeHighTransactions fileName
 
     //printDataInHistoricOrder allTimeHighTransactions notAllTimeHighTransactions
-    printfn "number of finished transactions that were started at all time high: %i" (allTimeHighTransactions |> List.length)
-    printfn "number of finished transactions that were startet at not at all time high: %i" (notAllTimeHighTransactions |> List.length)
-    printfn "AllTimehigh avgGain: %M" (allTimeHighTransactions |> (List.map calculateGain) |> List.average)
-    printfn "NOT AllTimehigh avgGain: %M" (notAllTimeHighTransactions |> (List.map calculateGain) |> List.average)
+    printfn "Number of transactions that were started at all-time high: %i" (allTimeHighTransactions |> List.length)
+    printfn "Number of transactions that were startet at not at all-time high: %i" (notAllTimeHighTransactions |> List.length)
+    printfn "All-time high avg Gain: %M%%" (allTimeHighTransactions |> (List.map calculateGain) |> List.average)
+    printfn "Not All-time high avg Gain:: %M%%" (notAllTimeHighTransactions |> (List.map calculateGain) |> List.average)
     printfn " "
-    //SkiaChart.SkiaChart cc = new SkiaChart.SkiaChart();
 
 let rec processDataForFiles (fileNames: list<string>) = 
     match fileNames with 
@@ -167,6 +167,5 @@ let rec processDataForFiles (fileNames: list<string>) =
 
 [<EntryPoint>]
 let main argv =
-    processDataForFiles ["^DJI.csv"; "^GSPC.csv"; "^GDAXI.csv"]
-    //processDataForFile "^DJI.csv"
+    processDataForFiles ["^DJI.csv"; "^GSPC.csv"; "^GDAXI.csv"; "^IXIC.csv"]
     0
