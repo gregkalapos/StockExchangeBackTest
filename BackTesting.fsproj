@@ -8,10 +8,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- TODO: move to nuget -->
-    <ProjectReference Include="\Users\gergo\tmp\skiasharptest\SkiaChart\SkiaChart.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="skiasharp" Version="1.59.1" />
+    <PackageReference Include="SkiaChart" Version="0.1.0" />
   </ItemGroup>
 </Project>
